@@ -1,6 +1,7 @@
 <template>
     <div id="app">
         <div v-if="!gameStarted">
+            <input type="text" v-model="userName" placeholder="사용자 이름 입력">
             <input type="number" v-model.number="targetNumber" min="3">
             <button @click="startGame">게임 시작</button>
         </div>
@@ -36,7 +37,7 @@
 </template>
 
 <script setup>
-import { ref, computed, watch } from 'vue';
+import { ref, computed, watch, onMounted } from 'vue';
 
 let targetNumber = ref(5);
 const givenNumber = ref(0);
@@ -45,12 +46,17 @@ const gameStarted = ref(false);
 const remainingTime = ref(0);
 let timer = null;
 let selectedNumber = ref('?');
-let userName = '김시원';
+let userName = ref('');
 let correctAnswers = ref(0);
 let incorrectAnswers = ref(0);
 let gameOver = ref(false);
 let pastResults = ref([]);
 let previousGivenNumber = ref(null);
+
+// 사용자 이름을 localStorage에서 가져옵니다.
+onMounted(() => {
+    userName.value = localStorage.getItem('userName') || '';
+});
 
 const startGame = () => {
     gameStarted.value = true;
@@ -65,10 +71,12 @@ const startGame = () => {
     }, 1000);
     nextQuestion();
     pastResults.value = JSON.parse(localStorage.getItem("gameResults")) || [];
+
+    // 사용자 이름을 localStorage에 저장합니다.
+    localStorage.setItem('userName', userName.value);
 };
 
 const nextQuestion = () => {
-    // givenNumber.value = Math.floor(Math.random() * targetNumber.value);
     let newGivenNumber;
     do {
         newGivenNumber = Math.floor(Math.random() * (targetNumber.value - 1) + 1);
@@ -109,7 +117,6 @@ watch(gameOver, (newValue) => {
         localStorage.setItem("gameResults", JSON.stringify(pastResults.value));
     }
 });
-
 </script>
 
 <style scoped>
