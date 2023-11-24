@@ -5,17 +5,21 @@
             <input type="number" v-model.number="targetNumber" min="3">
             <button @click="startGame">게임 시작</button>
         </div>
-        <div class="game-board" v-else>
+        <div class="game-board" v-if="gameStarted && !gameOver">
             <div class="number-box">{{ givenNumber }}</div>
             <div class="operator-box">+</div>
             <div class="number-box">{{ selectedNumber }}</div>
             <div class="operator-box">=</div>
             <div class="number-box">{{ targetNumber }}</div>
+            <div class="options">
+                <div v-for="option in options" :key="option" @click="selectOption(option)" class="number-box2">{{ option }}</div>
+            </div>
+            <div class="feedback-overlay">
+                <div class="circle" :style="circleStyle"></div>
+                <div class="cross" :style="crossStyle">X</div>
+            </div>
         </div>
-        <div class="options" v-if="gameStarted">
-            <div v-for="option in options" :key="option" @click="selectOption(option)" class="number-box2">{{ option }}</div>
-        </div>
-        <div class="results" v-if="gameStarted">
+        <div class="results" v-if="gameStarted && !gameOver">
             <div>문제 번호: {{ correctAnswers + incorrectAnswers + 1 }}</div>
             <div><span :key="correctAnswers" class="animated-number">맞춘 문제 수: {{ correctAnswers }}</span></div>
             <div><span :key="incorrectAnswers" class="animated-number">틀린 문제 수: {{ incorrectAnswers }}</span></div>
@@ -53,14 +57,16 @@ let gameOver = ref(false);
 let pastResults = ref([]);
 let previousGivenNumber = ref(null);
 
-// 사용자 이름을 localStorage에서 가져옵니다.
 onMounted(() => {
     userName.value = localStorage.getItem('userName') || '';
 });
 
+const circleStyle = ref({ opacity: 0 });
+const crossStyle = ref({ opacity: 0 });
+
 const startGame = () => {
     gameStarted.value = true;
-    remainingTime.value = 120; // 초시계 시간 설정
+    remainingTime.value = 120;
     timer = setInterval(() => {
         if (remainingTime.value > 0) {
             remainingTime.value--;
@@ -71,8 +77,6 @@ const startGame = () => {
     }, 1000);
     nextQuestion();
     pastResults.value = JSON.parse(localStorage.getItem("gameResults")) || [];
-
-    // 사용자 이름을 localStorage에 저장합니다.
     localStorage.setItem('userName', userName.value);
 };
 
@@ -99,9 +103,13 @@ const selectOption = (option) => {
     selectedNumber.value = option;
     if (option === targetNumber.value - givenNumber.value) {
         correctAnswers.value++;
+        circleStyle.value = { opacity: 0.3 };
+        setTimeout(() => circleStyle.value = { opacity: 0 }, 500);
         nextQuestion();
     } else {
         incorrectAnswers.value++;
+        crossStyle.value = { opacity: 0.3 };
+        setTimeout(() => crossStyle.value = { opacity: 0 }, 500);
         selectedNumber.value = '?';
     }
 };
@@ -120,8 +128,7 @@ watch(gameOver, (newValue) => {
 </script>
 
 <style scoped>
-.game-board,
-.options {
+.game-board, .options {
     display: flex;
     justify-content: center;
     margin-top: 30px;
@@ -131,32 +138,14 @@ watch(gameOver, (newValue) => {
 
 .results {
     display: flex;
-    justify-content: c;
+    justify-content: center;
     margin-bottom: 20px;
     flex-direction: column;
     text-align: center;
     font-size: 18px;
 }
 
-.number-box {
-    width: 100px;
-    text-align: center;
-    border: 1px solid #FF;
-    color: blue;
-    margin: 0 10px;
-    font-size: 5em;
-}
-
-.number-box2 {
-    width: 100px;
-    text-align: center;
-    border: 1px solid #999;
-    color: blue;
-    margin: 0 20px;
-    font-size: 5em;
-}
-
-.operator-box {
+.number-box, .number-box2, .operator-box {
     width: 100px;
     text-align: center;
     border: 1px solid #FFF;
@@ -165,27 +154,42 @@ watch(gameOver, (newValue) => {
     font-size: 5em;
 }
 
+.feedback-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.circle {
+    width: 70%;
+    height: 70%;
+    border-radius: 50%;
+    background-color: green;
+    position: absolute;
+    opacity: 0;
+}
+
+.cross {
+    font-size: 10em;
+    color: red;
+    position: absolute;
+    opacity: 0;
+}
+
 .animated-number {
     animation: pulse 2s;
 }
 
-.past-results {
-    width: 100%;
-    margin-top: 30px;
-}
-
-.past-results ul {
-    list-style: none;
-}
-
 @keyframes pulse {
-
-    0%,
-    100% {
+    0%, 100% {
         opacity: 1;
         color: aliceblue;
     }
-
     50% {
         opacity: 0.5;
         color: red;
